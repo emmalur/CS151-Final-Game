@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.26)
 project(DungeonOfDoom)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 
 add_compile_options(-Wall -Wextra -pedantic)
 
@@ -9,7 +9,7 @@ set(CMAKE_EXE_LINNKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-static")
 
 include (FetchContent)
 FetchContent_Declare(ftxui
-    GIT_REPOSITORY https://github.com/ArthurSonzogni/fxtui
+    GIT_REPOSITORY https://github.com/ArthurSonzogni/ftxui
     GIT_TAG v5.0.0
 )
 
