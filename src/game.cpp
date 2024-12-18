@@ -12,24 +12,48 @@
 
 using namespace ftxui;
 
-void startMainMenu()
+void startMainMenu(std::function<void()> quit)
 {
     auto screen = ScreenInteractive::Fullscreen();
     auto exit = screen.ExitLoopClosure();
 
-    auto play_and_exit = [exit]() 
+    auto quit_and_exit = [quit, exit]() 
     {
+        quit();
         exit();
     };
 
-    auto menu = mainMenu(play_and_exit);
+    auto menu = mainMenu(exit, quit_and_exit);
     screen.Loop(menu);
 }
 
-void startMap(Player &player, Level &level, std::function<void()> quit)
+void checkPosition(int x, int y, Player &player, Level &level)
+{
+    switch(level.floor[y][x].symbol)
+    {
+        case ' ':
+        case '#':
+        case '.':
+            player.move(x, y, level);
+            break;
+        case 'X':
+        case 'Z':
+        case 'G':
+        case 'D':
+            // combat(Player &player, Enemy &enemy)
+            // do level.getEnemyAt(x, y) to get the enemy to put in combat
+            break;
+        default:
+            break;
+    }
+}
+
+void startMap(Player &player, Level &level, std::function<void()> quit, std::function<void()> back, std::function<void()> noMove)
 {
     auto screen = ScreenInteractive::Fullscreen();
     auto exit = screen.ExitLoopClosure();
+
+    static bool inventory = false;
     
     auto quit_and_exit = [quit, exit]()
     {
@@ -37,8 +61,20 @@ void startMap(Player &player, Level &level, std::function<void()> quit)
         exit();
     };
 
+    auto back_and_exit = [back, exit]()
+    {
+        back();
+        exit();
+    };
+
     std::vector<Entity> entities{};
+
+    // Add all entities to get drawn
     entities.push_back(player);
+    for (Enemy enemy : level.enemies)
+    {
+        entities.push_back(enemy);
+    }
 
     Elements page = cellsToElements(level.floor, entities);
 
@@ -50,9 +86,20 @@ void startMap(Player &player, Level &level, std::function<void()> quit)
         })
     );
 
+    std::string inventoryMessage = "";
+
+    if (inventory)
+    {
+        inventoryMessage = "You got stuff in your inventory probably";
+        inventory = false;
+    }
+
     // messages; like attacks maybe first help message
     page.push_back(
-        text("Tip: Use wasd to move, press b to go back to menu, ...") | bgcolor(Color::Black) | flex
+        text("Tip: Use wasd to move, press q to quit, b to go back to menu, and i to see inventory")
+    );
+    page.push_back(
+        text(inventoryMessage)
     );
 
     // add all of the lines
@@ -68,28 +115,40 @@ void startMap(Player &player, Level &level, std::function<void()> quit)
             quit_and_exit();
             return true;
         }
+        else if (event == Event::Character('b'))
+        {
+            back_and_exit();
+            return true;
+        }
+        else if (event == Event::Character('i'))
+        {
+            inventory = true;
+            noMove();
+            exit();
+            return true;
+        }
         else if (event == Event::Character('w'))
         {
             exit();
-            player.moveVertical(1, level);
+            checkPosition(player.getX(), player.getY() - 1, player, level);
             return true;
         }
         else if (event == Event::Character('s'))
         {
             exit();
-            player.moveVertical(-1, level);
+            checkPosition(player.getX(), player.getY() + 1, player, level);
             return true;
         }
         else if (event == Event::Character('d'))
         {
             exit();
-            player.moveHorizontal(1, level);
+            checkPosition(player.getX() + 1, player.getY(), player, level);
             return true;
         }
         else if (event == Event::Character('a'))
         {
             exit();
-            player.moveHorizontal(-1, level);
+            checkPosition(player.getX() - 1, player.getY(), player, level);
             return true;
         }
         return false;
@@ -101,15 +160,36 @@ void startMap(Player &player, Level &level, std::function<void()> quit)
 void startGame()
 {
     bool quit = false;
-    // lambda to give to functions so they can say we quit
-    auto on_quit = [&] { quit = true; };
+    bool back = false;
+    bool moved = true;
+    // bool save = false;
+    // bool load = false;
 
+    // lambdas to give to functions so they can send up call stack
+    auto on_quit = [&] { quit = true; };
+    auto on_back = [&] { back = true; };
+    auto on_noMove = [&] { moved = false; };
+
+    startMainMenu(on_quit);
+
+    // if (!quit || !save || !load)
     Map map(10);
     Player player = playerSetup(map);
 
-    startMainMenu();
     while (!quit)
     {
-        startMap(player, map.floors[player.getFloor()], on_quit);
+        startMap(player, map.floors[player.getFloor()], on_quit, on_back, on_noMove);
+
+        if (back)
+        {
+            startMainMenu(on_quit);
+            back = false;
+        }
+
+        // if the player moved, move the enemies
+        if (moved)
+        {
+            map.floors[player.getFloor()].moveEnemies();
+        }
     }
 }

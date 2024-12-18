@@ -5,41 +5,12 @@
 Player::Player(int x, int y) : Entity('@', x, y)
 {
     floor = 0;
-    health = 20;
-    maxHealth = 20;
-    attack = 5;
+    health = 50;
+    maxHealth = 50;
+    attack = 10;
     defense = 5;
     coins = 0;
 } 
-
-void Player::moveVertical(int direction, Level &level)
-{
-    if (direction > 0)
-    {
-        // Top of map is y = 0 so subtracting moves up
-        if (level.isMoveable(x, y - 1))
-            y--;
-    }
-    else if (direction < 0)
-    {
-        if (level.isMoveable(x, y + 1))
-            y++;
-    }
-}
-
-void Player::moveHorizontal(int direction, Level &level)
-{
-    if (direction > 0)
-    {
-        if (level.isMoveable(x + 1, y))
-            x++;
-    }
-    else if (direction < 0)
-    {
-        if (level.isMoveable(x - 1, y))
-            x--;
-    }
-}
 
 Player playerSetup(Map& map)
 {

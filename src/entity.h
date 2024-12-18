@@ -1,11 +1,11 @@
 #pragma once
 
+class Level;
+
 class Entity
-{
-private:
-    char symbol;
-    
+{  
 protected:
+    char symbol;
     int x;
     int y;
 
@@ -15,4 +15,6 @@ public:
     int getX() const { return x; }
     int getY() const { return y; }
     char getSymbol() const { return symbol; }
+
+    void move(int x, int y, Level &level);
 };

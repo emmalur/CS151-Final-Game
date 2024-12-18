@@ -10,4 +10,4 @@
  */
 void startGame();
 
-ftxui::Component mainMenu(std::function<void()> play);
+ftxui::Component mainMenu(std::function<void()> play, std::function<void()> quit);

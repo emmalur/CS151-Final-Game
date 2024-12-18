@@ -2,6 +2,7 @@
 
 #include "room.h"
 #include "cell.h"
+#include "enemy.h"
 
 #include <vector>
 #include <string>
@@ -13,10 +14,10 @@ class Level
 private:
     int floorNumber;
     std::vector<Room> rooms;
-    // std::vector<Enemy> enemies;
 
 public:
     std::vector<std::vector<Cell>> floor;
+    std::vector<Enemy> enemies;
     Level();
 
     void changeFloorNumber(int floorNumber) { this->floorNumber = floorNumber; }
@@ -27,4 +28,6 @@ public:
     void addRoom(Room room, bool visted);
     bool isMoveable(int x, int y);
     std::pair<int, int> suitibleLocation(int roomNum);
+    void moveEnemies();
+    Enemy getEnemyAt(int x, int y);
 };

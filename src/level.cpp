@@ -1,5 +1,7 @@
 #include "level.h"
 
+#include <iostream>
+
 const int GAME_WIDTH = 120;
 const int GAME_HEIGHT = 24;
 
@@ -19,6 +21,9 @@ Level::Level()
             cell.fgColor = ftxui::Color::White;
         }
     }
+
+    // std::vector<Enemy> e{};
+    enemies = {};
 
     floor = cells;
     floorNumber = 0;
@@ -64,6 +69,13 @@ bool Level::isMoveable(int x, int y)
     if (y < 0 || y >= 24)
         return false;
 
+    for (Enemy enemy : enemies)
+    {
+        // can't move if there's an enemy there
+        if (x == enemy.getX() && y == enemy.getY())
+            return false;
+    }
+
     return floor[y][x].isWalkable;
 }
 
@@ -85,4 +97,95 @@ std::pair<int, int> Level::suitibleLocation(int roomNum)
         if (isMoveable(randPoint.first, randPoint.second))
             return randPoint;
     }
+}
+
+void Level::moveEnemies()
+{
+    // This isn't working; the enemy types are random and I'm not sure why
+
+    // Random Number Generator
+    std::random_device dev;
+    std::mt19937 gen(dev());
+
+    for (Enemy &enemy : enemies)
+    {
+        switch (enemy.getType())
+        {
+            case EnemyType::Spider:
+                // Move the spider in a random direction, one of which being nothing
+                {
+                    std::uniform_int_distribution movement {0, 4};
+                    switch(movement(gen))
+                    {
+                        case 0:
+                            // Do Nothing
+                            break;
+                        case 1:
+                            // UP
+                            if (isMoveable(enemy.getX(), enemy.getY() - 1))
+                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            break;
+                        case 2:
+                            // Down
+                            if (isMoveable(enemy.getX(), enemy.getY() + 1))
+                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            break;
+                        case 3:
+                            // Left
+                            if (isMoveable(enemy.getX() - 1, enemy.getY()))
+                                enemy.move(enemy.getX() - 1, enemy.getY(), *this);
+                            break;
+                        case 4:
+                            // Right
+                            if (isMoveable(enemy.getX() + 1, enemy.getY()))
+                                enemy.move(enemy.getX() + 1, enemy.getY(), *this);
+                            break;
+                    }
+                }
+                break;
+            default:
+                {
+                    std::uniform_int_distribution movement {0, 4};
+                    switch(movement(gen))
+                    {
+                        case 0:
+                            // Do Nothing
+                            break;
+                        case 1:
+                            // UP
+                            if (isMoveable(enemy.getX(), enemy.getY() - 1))
+                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            break;
+                        case 2:
+                            // Down
+                            if (isMoveable(enemy.getX(), enemy.getY() + 1))
+                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            break;
+                        case 3:
+                            // Left
+                            if (isMoveable(enemy.getX() - 1, enemy.getY()))
+                                enemy.move(enemy.getX() - 1, enemy.getY(), *this);
+                            break;
+                        case 4:
+                            // Right
+                            if (isMoveable(enemy.getX() + 1, enemy.getY()))
+                                enemy.move(enemy.getX() + 1, enemy.getY(), *this);
+                            break;
+                    }
+                }
+                break;
+        }
+    }
+}
+
+Enemy Level::getEnemyAt(int x, int y)
+{
+    for (Enemy enemy : enemies)
+    {
+        if (enemy.getX() == x && enemy.getY() == y)
+            return enemy;
+    }
+
+    // couldn't find
+    return Enemy();
 }

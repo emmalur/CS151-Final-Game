@@ -23,9 +23,6 @@ public:
     int getAttack() const { return attack; }
     int getDefense() const {return defense; }
     int getCoins() const { return coins; }
-
-    void moveVertical(int direction, Level &level);
-    void moveHorizontal(int direction, Level &level);
 };
 
 Player playerSetup(Map &map);

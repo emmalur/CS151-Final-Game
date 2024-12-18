@@ -2,30 +2,9 @@
 #include <ftxui/dom/elements.hpp>
 #include <functional>
 
+// Heavy Insperation from https://github.com/ArthurSonzogni/termBreaker for figuring out fxtui
+
 using namespace ftxui;
-
-/**
- * @param play a function pointer to change a calling function's variable
- */
-/*
-Component mainMenu(std::function<void()> play)
-{
-    auto button = Button("Play", play, ButtonOption::Animated());
-
-    int where = 0;
-    auto container = Container::Vertical({
-        Container::Horizontal({
-            button,
-        }, &where),
-    });
-
-    return Renderer(container, [&] {
-        return vbox({
-            text("The Dungeon of Doom") | bold | center,
-            container->Render(),
-        });
-    });
-}*/
 
 Element mainMenuDecorator(Element element) {
   return vbox({
@@ -34,18 +13,26 @@ Element mainMenuDecorator(Element element) {
   });
 }
 
-Component mainMenu(std::function<void()> play)
+Component mainMenu(std::function<void()> play, std::function<void()> quit)
 {
     class Impl : public ComponentBase
     {
     public:
-        Impl(std::function<void()> play)
+        Impl(std::function<void()> play, std::function<void()> quit)
         {
             
-            auto button = Button("Play", play, ButtonOption::Animated());
+            auto playButton = Button("Play", play, ButtonOption::Animated());
+            auto exitButton = Button("Exit", quit, ButtonOption::Animated());
+            
+            // TODO: implement these buttons' functions
+            auto saveButton = Button("Save", {play}, ButtonOption::Animated());
+            auto loadButton = Button("Load", {play}, ButtonOption::Animated());
 
             auto component = Container::Vertical({
-                button,                                
+                playButton,
+                saveButton,
+                loadButton,
+                exitButton,                                
             });
 
             component |= mainMenuDecorator;    
@@ -54,5 +41,5 @@ Component mainMenu(std::function<void()> play)
         }
     };
 
-    return Make<Impl>(std::move(play));
+    return Make<Impl>(std::move(play), std::move(quit));
 }

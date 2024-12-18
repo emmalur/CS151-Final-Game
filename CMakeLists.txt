@@ -3,7 +3,7 @@ project(DungeonOfDoom)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_compile_options(-Wall -Wextra -pedantic)
+add_compile_options(-Wall -Wextra -pedantic -g)
 
 set(CMAKE_EXE_LINNKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-static")
 
@@ -19,7 +19,7 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/game.cpp src/mainmenu.cpp src/level.cpp src/player.cpp src/map.cpp src/cell.cpp)
+add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/game.cpp src/mainmenu.cpp src/level.cpp src/player.cpp src/map.cpp src/cell.cpp src/enemy.cpp src/entity.cpp)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE include)
 

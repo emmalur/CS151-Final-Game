@@ -65,8 +65,116 @@ Map::Map(int numberOfFloors)
             std::uniform_int_distribution randomYOffset {0, MAX_ROOM_HEIGHT - newRoom.height - 1};
             newRoom.y += randomYOffset(gen);
 
-            newFloors[i].addRoom(newRoom, true);
+            if (roomNum == 0 && i == 0)
+            {
+                newFloors[0].addRoom(newRoom, true);
+            }
+            else
+            {
+                // set to true if you want to see all rooms
+                newFloors[i].addRoom(newRoom, true);
+            }
         }
+    }
+
+    std::uniform_int_distribution monsterDist {0, 4};
+
+    // Add enemies to each level
+    for (int i = 0; i < numberOfFloors; i++)
+    {
+        if (i == 0 || (i + 1) % 5 != 0 )
+        {
+            // Only spiders and zombies
+            if ((i + 1) < 5)
+            {
+                for (int roomNum = 0; roomNum < 6; roomNum++)
+                {
+                    int monsterChance = monsterDist(gen);
+                    // 50% chance of a monster in each room, 50% chance it's either spider or zombie
+                    switch (monsterChance)
+                    {
+                        case 0:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Spider, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        case 2:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Zombie, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            // Giants and zombies
+            else if (5 < i && i < 8)
+            {
+                for (int roomNum = 0; roomNum < 6; roomNum++)
+                {
+                    int monsterChance = monsterDist(gen);
+                    // 50% chance of a monster in each room, 50% chance it's either giant or zombie
+                    switch (monsterChance)
+                    {
+                        case 0:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Giant, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        case 2:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Zombie, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            // Giants and dragons
+            else if (i >= 8)
+            {
+                for (int roomNum = 0; roomNum < 6; roomNum++)
+                {
+                    int monsterChance = monsterDist(gen);
+                    // 50% chance of a monster in each room, 50% chance it's either giant or dragon
+                    switch (monsterChance)
+                    {
+                        case 0:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Giant, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        case 2:
+                        {
+                            std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
+                            Enemy newEnemy(EnemyType::Dragon, startLoc.first, startLoc.second);
+                            newFloors[i].enemies.push_back(newEnemy);
+                        }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+        // boss battles
+        else
+        {
+            // TODO: make custom enemy as a bosses for floor 4
+        }
+
     }
 
     floors = newFloors;
