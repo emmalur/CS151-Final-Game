@@ -19,7 +19,7 @@ if(NOT ftxui_POPULATED)
     add_subdirectory(${ftxui_SOURCE_DIR} ${ftxui_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
-add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
+add_executable(${CMAKE_PROJECT_NAME} src/main.cpp src/game.cpp src/mainmenu.cpp src/level.cpp src/player.cpp src/map.cpp src/cell.cpp)
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE include)
 
