@@ -15,8 +15,6 @@ class Enemy : public Entity
 {
 private:
     EnemyType type;
-    int health;
-    int attack;
     int defense;
 
 public:

@@ -1,5 +1,7 @@
 #include "map.h"
 
+#include <random>
+
 int const MAX_ROOM_HEIGHT = 12;
 int const MAX_ROOM_WIDTH = 40;
 
@@ -7,14 +9,15 @@ int const MAX_ROOM_WIDTH = 40;
 std::random_device dev;
 std::mt19937 gen(dev());
 
-Map::Map(int numberOfFloors)
+Map::Map(int numberOfFloors, Player &player)
 {
     std::vector<Level> newFloors(numberOfFloors);
 
-    // give each level the correct floor number
+    // give each level the correct floor number and add player
     for (int i = 0; i < static_cast<int>(newFloors.size()); i++)
     {
         newFloors[i].changeFloorNumber(i);
+        newFloors[i].addPlayer(player);
     }
 
     // add correct amount of rooms to each level
@@ -198,6 +201,9 @@ ftxui::Elements cellsToElements(std::vector<std::vector<Cell>> &cells, std::vect
                 {
                     for (Entity entity : entities)
                     {
+                        if (entity.getHealth() <= 0)
+                            continue;
+
                         if (entity.getX() == x && entity.getY() == y)
                         {
                             std::string s{entity.getSymbol()};

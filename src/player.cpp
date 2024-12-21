@@ -1,8 +1,17 @@
 #include "player.h"
+#include "map.h"
 
-#include <string>
+Player::Player() : Entity('@', 0, 0, 0, 0, "Player")
+{
+    floor = 0;
+    health = 50;
+    maxHealth = 50;
+    attack = 10;
+    defense = 5;
+    coins = 0;
+}
 
-Player::Player(int x, int y) : Entity('@', x, y)
+Player::Player(int x, int y) : Entity('@', x, y, 0, 0, "Player")
 {
     floor = 0;
     health = 50;
@@ -12,12 +21,13 @@ Player::Player(int x, int y) : Entity('@', x, y)
     coins = 0;
 } 
 
-Player playerSetup(Map& map)
+void Player::playerSetup(Map& map)
 {
     // find start Location on floor 0 in room 0
     std::pair<int, int> startLoc = map.floors[0].suitibleLocation(0);
 
-    return Player(startLoc.first, startLoc.second);
+    x = startLoc.first;
+    y = startLoc.second;
 }
 
 std::string makeStatus(Player &player)

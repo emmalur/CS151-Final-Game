@@ -1,6 +1,9 @@
 #include "level.h"
+#include "player.h"
 
 #include <iostream>
+#include <utility>
+#include <random>
 
 const int GAME_WIDTH = 120;
 const int GAME_HEIGHT = 24;
@@ -21,6 +24,9 @@ Level::Level()
             cell.fgColor = ftxui::Color::White;
         }
     }
+
+    Player newPlayer;
+    player = &newPlayer;
 
     // std::vector<Enemy> e{};
     enemies = {};
@@ -61,22 +67,30 @@ void Level::addRoom(Room room, bool visted)
     }
 }
 
-bool Level::isMoveable(int x, int y)
+Moveable Level::isMoveable(int x, int y)
 {
     // bounds checking
     if (x < 0 || x >= 120)
-        return false;
+        return Moveable::No;
     if (y < 0 || y >= 24)
-        return false;
+        return Moveable::No;
+    
+    if (x == player->getX() && y == player->getY())
+        return Moveable::Player;
 
-    for (Enemy enemy : enemies)
+    for (Enemy &enemy : enemies)
     {
         // can't move if there's an enemy there
         if (x == enemy.getX() && y == enemy.getY())
-            return false;
+        {
+            return Moveable::Enemy;
+        }
     }
 
-    return floor[y][x].isWalkable;
+    if (floor[y][x].isWalkable)
+        return Moveable::Moveable;
+
+    return Moveable::No;
 }
 
 std::pair<int, int> Level::suitibleLocation(int roomNum)
@@ -94,21 +108,32 @@ std::pair<int, int> Level::suitibleLocation(int roomNum)
         randPoint.first = xDist(gen);
         randPoint.second = yDist(gen);
 
-        if (isMoveable(randPoint.first, randPoint.second))
+        if (isMoveable(randPoint.first, randPoint.second) == Moveable::Moveable)
             return randPoint;
     }
 }
 
-void Level::moveEnemies()
+void Level::moveEnemies(std::function<void(std::string)> addMessage)
 {
-    // This isn't working; the enemy types are random and I'm not sure why
-
     // Random Number Generator
     std::random_device dev;
     std::mt19937 gen(dev());
 
-    for (Enemy &enemy : enemies)
+    for (int i = 0; i < static_cast<int>(enemies.size()); i++)
     {
+        Enemy &enemy = enemies[i];
+        // Remove enemies who have died from the game
+        if (enemy.getHealth() <= 0)
+        {
+            // Swap current enemy to front
+            Enemy temp = enemies[enemies.size() - 1];
+            enemies[enemies.size() - 1] = enemy;
+            enemies[i] = temp;
+
+            // Remove enemy
+            enemies.pop_back();
+        }
+
         switch (enemy.getType())
         {
             case EnemyType::Spider:
@@ -122,23 +147,31 @@ void Level::moveEnemies()
                             break;
                         case 1:
                             // UP
-                            if (isMoveable(enemy.getX(), enemy.getY() - 1))
+                            if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Moveable)
                                 enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            else if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 2:
                             // Down
-                            if (isMoveable(enemy.getX(), enemy.getY() + 1))
-                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Moveable)
+                                enemy.move(enemy.getX(), enemy.getY() + 1, *this);
+                            else if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 3:
                             // Left
-                            if (isMoveable(enemy.getX() - 1, enemy.getY()))
+                            if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Moveable)
                                 enemy.move(enemy.getX() - 1, enemy.getY(), *this);
+                            else if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 4:
                             // Right
-                            if (isMoveable(enemy.getX() + 1, enemy.getY()))
+                            if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Moveable)
                                 enemy.move(enemy.getX() + 1, enemy.getY(), *this);
+                            else if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                     }
                 }
@@ -153,23 +186,31 @@ void Level::moveEnemies()
                             break;
                         case 1:
                             // UP
-                            if (isMoveable(enemy.getX(), enemy.getY() - 1))
+                            if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Moveable)
                                 enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            else if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 2:
                             // Down
-                            if (isMoveable(enemy.getX(), enemy.getY() + 1))
-                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
+                            if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Moveable)
+                                enemy.move(enemy.getX(), enemy.getY() + 1, *this);
+                            else if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 3:
                             // Left
-                            if (isMoveable(enemy.getX() - 1, enemy.getY()))
+                            if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Moveable)
                                 enemy.move(enemy.getX() - 1, enemy.getY(), *this);
+                            else if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                         case 4:
                             // Right
-                            if (isMoveable(enemy.getX() + 1, enemy.getY()))
+                            if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Moveable)
                                 enemy.move(enemy.getX() + 1, enemy.getY(), *this);
+                            else if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Player)
+                                player->combat(enemy, addMessage);
                             break;
                     }
                 }
@@ -178,14 +219,14 @@ void Level::moveEnemies()
     }
 }
 
-Enemy Level::getEnemyAt(int x, int y)
+Enemy& Level::getEnemyAt(int x, int y)
 {
-    for (Enemy enemy : enemies)
+    for (Enemy &enemy : enemies)
     {
         if (enemy.getX() == x && enemy.getY() == y)
             return enemy;
     }
 
-    // couldn't find
-    return Enemy();
+    // couldn't find enemy there; not sure what to return
+    // return null;
 }

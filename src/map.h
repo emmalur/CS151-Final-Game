@@ -3,6 +3,7 @@
 #include "level.h"
 #include "cell.h"
 #include "entity.h"
+#include "player.h"
 
  
 #include "ftxui/dom/elements.hpp"
@@ -13,7 +14,7 @@ class Map
 
 public:
     std::vector<Level> floors;
-    Map(int numberOfFloors);
+    Map(int numberOfFloors, Player &player);
 };
 
 //std::vector<std::string> addEntities(Level &level, Player &player);

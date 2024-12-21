@@ -27,28 +27,30 @@ void startMainMenu(std::function<void()> quit)
     screen.Loop(menu);
 }
 
-void checkPosition(int x, int y, Player &player, Level &level)
+void checkPosition(int x, int y, Player &player, Level &level, std::function<void(std::string)> addMessage)
 {
     switch(level.floor[y][x].symbol)
     {
         case ' ':
         case '#':
         case '.':
-            player.move(x, y, level);
-            break;
-        case 'X':
-        case 'Z':
-        case 'G':
-        case 'D':
-            // combat(Player &player, Enemy &enemy)
-            // do level.getEnemyAt(x, y) to get the enemy to put in combat
+            if (level.isMoveable(x, y) != Moveable::Enemy)
+            {
+                player.move(x, y, level);
+            }
+            else
+            {
+                level.getEnemyAt(x, y).combat(player, addMessage);
+            }
             break;
         default:
             break;
     }
 }
 
-void startMap(Player &player, Level &level, std::function<void()> quit, std::function<void()> back, std::function<void()> noMove)
+void startMap(Player &player, Level &level, std::function<void()> quit, std::function<void()> back,
+            std::function<void()> noMove, std::function<void(std::string)> addMessage,
+            const std::vector<std::string> &messages)
 {
     auto screen = ScreenInteractive::Fullscreen();
     auto exit = screen.ExitLoopClosure();
@@ -91,6 +93,7 @@ void startMap(Player &player, Level &level, std::function<void()> quit, std::fun
     if (inventory)
     {
         inventoryMessage = "You got stuff in your inventory probably";
+        addMessage(inventoryMessage);
         inventory = false;
     }
 
@@ -98,11 +101,12 @@ void startMap(Player &player, Level &level, std::function<void()> quit, std::fun
     page.push_back(
         text("Tip: Use wasd to move, press q to quit, b to go back to menu, and i to see inventory")
     );
-    page.push_back(
-        text(inventoryMessage)
-    );
 
-    // add all of the lines
+    for (std::string message : messages)
+    {
+        page.push_back(text(message));
+    }   
+
     auto component = Renderer([&]
     {
         return vbox(page);        
@@ -130,25 +134,25 @@ void startMap(Player &player, Level &level, std::function<void()> quit, std::fun
         else if (event == Event::Character('w'))
         {
             exit();
-            checkPosition(player.getX(), player.getY() - 1, player, level);
+            checkPosition(player.getX(), player.getY() - 1, player, level, addMessage);
             return true;
         }
         else if (event == Event::Character('s'))
         {
             exit();
-            checkPosition(player.getX(), player.getY() + 1, player, level);
+            checkPosition(player.getX(), player.getY() + 1, player, level, addMessage);
             return true;
         }
         else if (event == Event::Character('d'))
         {
             exit();
-            checkPosition(player.getX() + 1, player.getY(), player, level);
+            checkPosition(player.getX() + 1, player.getY(), player, level, addMessage);
             return true;
         }
         else if (event == Event::Character('a'))
         {
             exit();
-            checkPosition(player.getX() - 1, player.getY(), player, level);
+            checkPosition(player.getX() - 1, player.getY(), player, level, addMessage);
             return true;
         }
         return false;
@@ -165,6 +169,14 @@ void startGame()
     // bool save = false;
     // bool load = false;
 
+    // Messages to display at bottom of screen
+    std::vector<std::string> messages{};
+
+    auto addMessage = [&messages](std::string message)
+    {
+        messages.push_back(message);
+    };
+
     // lambdas to give to functions so they can send up call stack
     auto on_quit = [&] { quit = true; };
     auto on_back = [&] { back = true; };
@@ -173,12 +185,13 @@ void startGame()
     startMainMenu(on_quit);
 
     // if (!quit || !save || !load)
-    Map map(10);
-    Player player = playerSetup(map);
+    Player player;
+    Map map(10, player);
+    player.playerSetup(map);
 
     while (!quit)
     {
-        startMap(player, map.floors[player.getFloor()], on_quit, on_back, on_noMove);
+        startMap(player, map.floors[player.getFloor()], on_quit, on_back, on_noMove, addMessage, messages);
 
         if (back)
         {
@@ -189,7 +202,7 @@ void startGame()
         // if the player moved, move the enemies
         if (moved)
         {
-            map.floors[player.getFloor()].moveEnemies();
+            map.floors[player.getFloor()].moveEnemies(addMessage);
         }
     }
 }
