@@ -18,7 +18,7 @@ protected:
 
 public:
     Entity(char symbol, int x, int y, int health, int attack, const std::string& name) : 
-        symbol{symbol}, x{x}, y{y}, health{health}, attack{attack}, name{name}, currentRoom{0}
+        symbol{symbol}, x{x}, y{y},currentRoom{0}, health{health}, attack{attack}, name{name}
     {}
 
     int getX() const { return x; }
