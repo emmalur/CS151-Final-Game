@@ -5,7 +5,7 @@ Cell wall()
     Cell newWall;
     newWall.symbol = '#';
     newWall.isWalkable = false;
-    newWall.isExplored = false;
+    newWall.isExplored = true;
     newWall.bgColor = ftxui::Color::GrayDark;
     newWall.fgColor = ftxui::Color::GrayLight;
 
@@ -17,7 +17,7 @@ Cell ground()
     Cell newGround;
     newGround.symbol = '.';
     newGround.isWalkable = true;
-    newGround.isExplored = false;
+    newGround.isExplored = true;
     newGround.bgColor = ftxui::Color::Black;
     newGround.fgColor = ftxui::Color::Yellow;
 

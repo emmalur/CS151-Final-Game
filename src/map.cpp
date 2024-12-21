@@ -43,7 +43,7 @@ Map::Map(int numberOfFloors, Player &player)
                     newRoom.y = 0;
                     break;
                 case 3:
-                    newRoom.x = 0;
+                    newRoom.x = 80;
                     newRoom.y = 12;
                     break;
                 case 4:
@@ -51,7 +51,7 @@ Map::Map(int numberOfFloors, Player &player)
                     newRoom.y = 12;
                     break;
                 case 5:
-                    newRoom.x = 80;
+                    newRoom.x = 0;
                     newRoom.y = 12;
             }
 
@@ -62,7 +62,7 @@ Map::Map(int numberOfFloors, Player &player)
             newRoom.width = randomWidth(gen);
 
             // x y offset
-            std::uniform_int_distribution randomXOffset {0, MAX_ROOM_WIDTH - newRoom.width};
+            std::uniform_int_distribution randomXOffset {0, MAX_ROOM_WIDTH - newRoom.width - 1};
             newRoom.x += randomXOffset(gen);
 
             std::uniform_int_distribution randomYOffset {0, MAX_ROOM_HEIGHT - newRoom.height - 1};
@@ -77,10 +77,21 @@ Map::Map(int numberOfFloors, Player &player)
                 // set to true if you want to see all rooms
                 newFloors[i].addRoom(newRoom, true);
             }
+
+            if (roomNum != 0)
+            {
+                newFloors[i].addHallway(roomNum - 1, roomNum);
+            }
         }
+
+        // Add stairs to each level
+        std::uniform_int_distribution stairRoom {0, 5};
+        std::pair<int, int> stairLoc = newFloors[i].suitibleLocation(stairRoom(gen));
+        newFloors[i].addStair(stairLoc.first, stairLoc.second);
+
     }
 
-    std::uniform_int_distribution monsterDist {0, 4};
+    std::uniform_int_distribution monsterDist {0, 7};
 
     // Add enemies to each level
     for (int i = 0; i < numberOfFloors; i++)
@@ -97,13 +108,15 @@ Map::Map(int numberOfFloors, Player &player)
                     switch (monsterChance)
                     {
                         case 0:
+                        case 2:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Spider, startLoc.first, startLoc.second);
                             newFloors[i].enemies.push_back(newEnemy);
                         }
                             break;
-                        case 2:
+                        case 4:
+                        case 6:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Zombie, startLoc.first, startLoc.second);
@@ -116,22 +129,28 @@ Map::Map(int numberOfFloors, Player &player)
                 }
             }
             // Giants and zombies
-            else if (5 < i && i < 8)
+            else if (5 <= i && i < 8)
             {
                 for (int roomNum = 0; roomNum < 6; roomNum++)
                 {
                     int monsterChance = monsterDist(gen);
-                    // 50% chance of a monster in each room, 50% chance it's either giant or zombie
+                    // 100% chance of an Enemy, 50% chance it's either giant or zombie
                     switch (monsterChance)
                     {
                         case 0:
+                        case 1:
+                        case 2:
+                        case 3:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Giant, startLoc.first, startLoc.second);
                             newFloors[i].enemies.push_back(newEnemy);
                         }
                             break;
-                        case 2:
+                        case 4:
+                        case 5:
+                        case 6:
+                        case 7:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Zombie, startLoc.first, startLoc.second);
@@ -149,17 +168,23 @@ Map::Map(int numberOfFloors, Player &player)
                 for (int roomNum = 0; roomNum < 6; roomNum++)
                 {
                     int monsterChance = monsterDist(gen);
-                    // 50% chance of a monster in each room, 50% chance it's either giant or dragon
+                    // 100% chance of a monster in each room, 75% chance it's a giant and 25% dragon
                     switch (monsterChance)
                     {
                         case 0:
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 4:
+                        case 5:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Giant, startLoc.first, startLoc.second);
                             newFloors[i].enemies.push_back(newEnemy);
                         }
                             break;
-                        case 2:
+                        case 6:
+                        case 7:
                         {
                             std::pair<int, int> startLoc = newFloors[i].suitibleLocation(roomNum);
                             Enemy newEnemy(EnemyType::Dragon, startLoc.first, startLoc.second);
@@ -172,12 +197,6 @@ Map::Map(int numberOfFloors, Player &player)
                 }
             }
         }
-        // boss battles
-        else
-        {
-            // TODO: make custom enemy as a bosses for floor 4
-        }
-
     }
 
     floors = newFloors;

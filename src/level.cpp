@@ -4,6 +4,15 @@
 #include <iostream>
 #include <utility>
 #include <random>
+#include <cmath>
+
+struct PairHasher
+{
+    size_t operator()(const std::pair<int, int>& x) const
+    {
+        return x.first ^ x.second;
+    }
+};
 
 const int GAME_WIDTH = 120;
 const int GAME_HEIGHT = 24;
@@ -28,7 +37,6 @@ Level::Level()
     Player newPlayer;
     player = &newPlayer;
 
-    // std::vector<Enemy> e{};
     enemies = {};
 
     floor = cells;
@@ -65,6 +73,77 @@ void Level::addRoom(Room room, bool visted)
             }
         }
     }
+}
+
+void Level::addHallway(int room1, int room2)
+{
+    // Find center of both rooms
+    int center1X = rooms[room1].x + (rooms[room1].width / 2);
+    int center1Y = rooms[room1].y + (rooms[room1].height / 2);
+
+    int center2X = rooms[room2].x + (rooms[room2].width / 2);
+    int center2Y = rooms[room2].y + (rooms[room2].height / 2);
+
+    // When drawing hallway down
+    if (center1Y < center2Y)
+    {
+        for (int i = center1Y; i <= center2Y; i++)
+        {
+            if (floor[i][center1X - 1].symbol != '.')
+                floor[i][center1X - 1] = wall();
+            if (floor[i][center1X + 1].symbol != '.')
+                floor[i][center1X + 1] = wall();
+
+            floor[i][center1X] = ground();
+        }
+    }
+    // drawing hallway up
+    else if (center1Y > center2Y)
+    {
+        for (int i = center2Y; i <= center1Y; i++)
+        {
+            if (floor[i][center1X - 1].symbol != '.')
+                floor[i][center1X - 1] = wall();
+            if (floor[i][center1X + 1].symbol != '.')
+                floor[i][center1X + 1] = wall();
+
+            floor[i][center1X] = ground();
+        }
+    }
+    
+    // When get to room2 y, go right with hallway line
+    if (center1X < center2X)
+    {
+        for (int i = center1X; i < center2X; i++)
+        {
+            if (floor[center2Y - 1][i].symbol != '.')
+                floor[center2Y - 1][i] = wall();
+            if (floor[center2Y + 1][i].symbol != '.')
+                floor[center2Y + 1][i] = wall();
+
+            floor[center2Y][i] = ground();
+        }
+    }
+    // go left with hallway
+    else if(center1X > center2X)
+    {
+        for (int i = center1X; i > center2X; i--)
+        {
+            if (floor[center2Y - 1][i].symbol != '.')
+                floor[center2Y - 1][i] = wall();
+            if (floor[center2Y + 1][i].symbol != '.')
+                floor[center2Y + 1][i] = wall();
+
+            floor[center2Y][i] = ground();
+        }
+    }
+}
+
+void Level::addStair(int x, int y)
+{
+    Cell stair = ground();
+    stair.symbol = '>';
+    floor[y][x] = stair;
 }
 
 Moveable Level::isMoveable(int x, int y)
@@ -113,12 +192,133 @@ std::pair<int, int> Level::suitibleLocation(int roomNum)
     }
 }
 
-void Level::moveEnemies(std::function<void(std::string)> addMessage)
+int distance(int x, int y, Player *player)
+{
+    return abs(x - player->getX()) + abs(y - player->getY());
+}
+
+void moveTowards(Enemy &enemy, Player *player, Level &level, std::function<void(std::string)> addMessage, std::function<void()> lose)
+{
+    int x = enemy.getX();
+    int y = enemy.getY();
+
+    int currentDistance = distance(x, y, player);
+    // shortest distance is not moving
+    std::pair<int, int> shortestDistance = std::make_pair(currentDistance, 0);
+
+    if (shortestDistance.first > distance(x, y - 1, player))
+    {
+        shortestDistance.first = distance(x, y - 1, player);
+        shortestDistance.second = 1;
+    }
+    else if (shortestDistance.first > distance(x, y + 1, player))
+    {
+        shortestDistance.first = distance(x, y + 1, player);
+        shortestDistance.second = 2;
+    }
+    else if (shortestDistance.first > distance(x + 1, y, player))
+    {
+        shortestDistance.first = distance(x + 1, y, player);
+        shortestDistance.second = 3;
+    }
+    else if (shortestDistance.first > distance(x - 1, y, player))
+    {
+        shortestDistance.first = distance(x - 1, y, player);
+        shortestDistance.second = 4;
+    }
+
+    switch (shortestDistance.second)
+    {
+        case 0:
+            break;
+        case 1:
+            if (level.isMoveable(x, y - 1) == Moveable::Player)
+            {
+                player->combat(enemy, 1, addMessage, lose);
+            }
+            else
+            {
+                enemy.move(x, y - 1, level);
+            }
+            break;
+        case 2:
+            if (level.isMoveable(x, y + 1) == Moveable::Player)
+            {
+                player->combat(enemy, 1, addMessage, lose);
+            }
+            else
+            {
+                enemy.move(x, y + 1, level);
+            }
+            break;
+        case 3:
+            if (level.isMoveable(x + 1, y) == Moveable::Player)
+            {
+                player->combat(enemy, 1, addMessage, lose);
+            }
+            else
+            {
+                enemy.move(x + 1, y, level);
+            }
+            break;
+        case 4:
+            if (level.isMoveable(x - 1, y) == Moveable::Player)
+            {
+                player->combat(enemy, 1, addMessage, lose);
+            }
+            else
+            {
+                enemy.move(x - 1, y, level);
+            }
+            break;
+    }
+}
+
+void moveRandomly(Enemy &enemy, Player *player, Level &level, std::function<void(std::string)> addMessage, std::function<void()> lose)
 {
     // Random Number Generator
     std::random_device dev;
     std::mt19937 gen(dev());
 
+    std::uniform_int_distribution movement {0, 4};
+    switch(movement(gen))
+    {
+        case 0:
+            // Do Nothing
+            break;
+        case 1:
+            // UP
+            if (level.isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Moveable)
+                enemy.move(enemy.getX(), enemy.getY() - 1, level);
+            else if (level.isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Player)
+                player->combat(enemy, 1, addMessage, lose);
+            break;
+        case 2:
+            // Down
+            if (level.isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Moveable)
+                enemy.move(enemy.getX(), enemy.getY() + 1, level);
+            else if (level.isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Player)
+                player->combat(enemy, 1, addMessage, lose);
+            break;
+        case 3:
+            // Left
+            if (level.isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Moveable)
+                enemy.move(enemy.getX() - 1, enemy.getY(), level);
+            else if (level.isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Player)
+                player->combat(enemy, 1, addMessage, lose);
+            break;
+        case 4:
+            // Right
+            if (level.isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Moveable)
+                enemy.move(enemy.getX() + 1, enemy.getY(), level);
+            else if (level.isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Player)
+                player->combat(enemy, 1, addMessage, lose);
+            break;
+    }
+}
+
+void Level::moveEnemies(std::function<void(std::string)> addMessage, std::function<void()> lose)
+{
     for (int i = 0; i < static_cast<int>(enemies.size()); i++)
     {
         Enemy &enemy = enemies[i];
@@ -138,82 +338,40 @@ void Level::moveEnemies(std::function<void(std::string)> addMessage)
         {
             case EnemyType::Spider:
                 // Move the spider in a random direction, one of which being nothing
+                moveRandomly(enemy, player, *this, addMessage, lose);
+                break;
+            case EnemyType::Zombie:
+                if (player->getRoom() == enemy.getRoom())
                 {
-                    std::uniform_int_distribution movement {0, 4};
-                    switch(movement(gen))
-                    {
-                        case 0:
-                            // Do Nothing
-                            break;
-                        case 1:
-                            // UP
-                            if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Moveable)
-                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
-                            else if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 2:
-                            // Down
-                            if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Moveable)
-                                enemy.move(enemy.getX(), enemy.getY() + 1, *this);
-                            else if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 3:
-                            // Left
-                            if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Moveable)
-                                enemy.move(enemy.getX() - 1, enemy.getY(), *this);
-                            else if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 4:
-                            // Right
-                            if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Moveable)
-                                enemy.move(enemy.getX() + 1, enemy.getY(), *this);
-                            else if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                    }
+                    moveTowards(enemy, player, *this, addMessage, lose);
+                }
+                else
+                {
+                    moveRandomly(enemy, player, *this, addMessage, lose);
+                }
+                break;
+            case EnemyType::Giant:
+                if (player->getRoom() == enemy.getRoom())
+                {
+                    moveTowards(enemy, player, *this, addMessage, lose);
+                }
+                else
+                {
+                    moveRandomly(enemy, player, *this, addMessage, lose);
+                }
+                break;
+            case EnemyType::Dragon:
+                if (player->getRoom() == enemy.getRoom())
+                {
+                    moveTowards(enemy, player, *this, addMessage, lose);
+                }
+                else
+                {
+                    moveRandomly(enemy, player, *this, addMessage, lose);
                 }
                 break;
             default:
-                {
-                    std::uniform_int_distribution movement {0, 4};
-                    switch(movement(gen))
-                    {
-                        case 0:
-                            // Do Nothing
-                            break;
-                        case 1:
-                            // UP
-                            if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Moveable)
-                                enemy.move(enemy.getX(), enemy.getY() - 1, *this);
-                            else if (isMoveable(enemy.getX(), enemy.getY() - 1) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 2:
-                            // Down
-                            if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Moveable)
-                                enemy.move(enemy.getX(), enemy.getY() + 1, *this);
-                            else if (isMoveable(enemy.getX(), enemy.getY() + 1) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 3:
-                            // Left
-                            if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Moveable)
-                                enemy.move(enemy.getX() - 1, enemy.getY(), *this);
-                            else if (isMoveable(enemy.getX() - 1, enemy.getY()) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                        case 4:
-                            // Right
-                            if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Moveable)
-                                enemy.move(enemy.getX() + 1, enemy.getY(), *this);
-                            else if (isMoveable(enemy.getX() + 1, enemy.getY()) == Moveable::Player)
-                                player->combat(enemy, addMessage);
-                            break;
-                    }
-                }
+                moveTowards(enemy, player, *this, addMessage, lose);
                 break;
         }
     }
@@ -229,4 +387,18 @@ Enemy& Level::getEnemyAt(int x, int y)
 
     // couldn't find enemy there; not sure what to return
     // return null;
+}
+
+int Level::whichRoom(int x, int y)
+{
+    for (int roomNum = 0; roomNum < static_cast<int>(rooms.size()); roomNum++)
+    {
+        if (x > rooms[roomNum].x && x < rooms[roomNum].x + rooms[roomNum].width)
+        {
+            if (y > rooms[roomNum].y && y < rooms[roomNum].y + rooms[roomNum].height)
+                return roomNum;
+        }
+    }
+
+    return -1;
 }
